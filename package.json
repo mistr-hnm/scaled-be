@@ -8,6 +8,7 @@
     "migrate:down": "node-pg-migrate down",
     "tier1": "pnpm --filter tier-1-1k dev",
     "tier2": "pnpm --filter tier-2-10k dev",
+    "tier3": "pnpm --filter tier-3-100k dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
