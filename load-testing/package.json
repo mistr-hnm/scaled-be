@@ -1,0 +1,35 @@
+{
+  "name": "load-testing",
+  "version": "1.0.0",
+  "description": "Load testing suite for API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "seed": "ts-node scripts/seed.ts",
+    "seed:100k": "ts-node scripts/seed.ts -- --count 100000",
+    "bench": "ts-node autocannon/benchmark.ts",
+    "bench:list": "ENDPOINT=list ts-node autocannon/benchmark.ts",
+    "bench:post": "ENDPOINT=post ts-node autocannon/benchmark.ts",
+    "smoke": "k6 run k6/smoke-test.js",
+    "load": "k6 run k6/load-test.js",
+    "stress": "k6 run k6/stress-test.js",
+    "spike": "k6 run k6/spike-test.js",
+    "soak": "artillery run artillery/load-test.yml",
+    "soak:report": "artillery report results/soak-result.json"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.2",
+  "devDependencies": {
+    "@types/autocannon": "^7.12.7",
+    "@types/node": "^25.2.3",
+    "@types/pg": "^8.16.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "autocannon": "^8.0.0",
+    "pg": "^8.18.0"
+  }
+}

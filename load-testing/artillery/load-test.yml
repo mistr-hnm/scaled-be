@@ -1,0 +1,142 @@
+# artillery/load-test.yml
+# ─────────────────────────────────────────────────────────
+# ARTILLERY — Long-running soak test
+#
+# Soak tests run at moderate load for a LONG time (hours).
+# They catch problems that only appear after sustained load:
+#   - Memory leaks (heap grows slowly until crash)
+#   - DB connection leaks (pool exhausts over hours)
+#   - File descriptor leaks (OS-level resource exhaustion)
+#
+# Install:
+#   npm install -g artillery
+#   npm install -g artillery-plugin-expect
+#
+# Run:
+#   artillery run artillery/load-test.yml
+#   artillery run --output results/soak-result.json artillery/load-test.yml
+#   artillery report results/soak-result.json        ← generates HTML report
+#
+# For a real soak test, change duration to "24h" and target to 50
+# ─────────────────────────────────────────────────────────
+
+config:
+  target: "http://localhost:3000"
+
+  # Phases define load over time — like k6 stages
+  phases:
+    - name: "Warm up"
+      duration: 60           # 1 minute
+      arrivalRate: 5         # 5 new users per second
+
+    - name: "Sustained load"
+      duration: 300          # 5 minutes (change to 86400 for 24h soak)
+      arrivalRate: 20        # 20 new users per second (steady state)
+
+    - name: "Cool down"
+      duration: 30
+      arrivalRate: 2
+
+  # Plugins
+  plugins:
+    expect: {}               # enables response assertions
+
+  # HTTP settings
+  http:
+    timeout: 10              # 10 second request timeout
+    maxSockets: 50           # max concurrent sockets per VU
+
+  # Variables available across all scenarios
+  variables:
+    baseUrl: "http://localhost:3000"
+
+  # Shared payload file — Artillery will randomly pick from these
+  payload:
+    path: "payload.json"
+    fields:
+      - "name"
+      - "email"
+    order: random            # pick rows randomly (not sequentially)
+
+  # Report thresholds — test fails if these are exceeded
+  ensure:
+    p99: 500                 # p99 latency must be under 500ms
+    maxErrorRate: 1          # error rate must stay under 1%
+
+# ─── Scenarios ────────────────────────────────────────────
+# Each virtual user randomly picks a scenario based on weight.
+scenarios:
+
+  # ── Read Scenario (weight 70) ──────────────────────────
+  - name: "Browse users"
+    weight: 70               # 70% of VUs run this scenario
+    flow:
+      # Step 1: Get the list
+      - get:
+          url: "/api/users?limit=20&page={{ $randomInt(1, 50) }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data"
+            - contentType: json
+
+      - think: 1             # pause 1 second (realistic user behaviour)
+
+      # Step 2: Click into a specific user
+      - get:
+          url: "/api/users/{{ $randomInt(1, 10000) }}"
+          expect:
+            - statusCode:
+                oneOf: [200, 404]   # 404 is fine — some IDs may not exist
+
+      - think: 2
+
+  # ── Create Scenario (weight 20) ───────────────────────
+  - name: "Register new user"
+    weight: 20               # 20% of VUs run this scenario
+    flow:
+      # Use data from payload.json
+      - post:
+          url: "/api/users"
+          json:
+            name: "{{ name }}"
+            email: "{{ email }}_{{ $randomInt(1, 999999) }}@artillery.com"
+          expect:
+            - statusCode:
+                oneOf: [201, 409]  # 409 = duplicate email (ok in testing)
+            - hasProperty: "data"
+
+      - think: 1
+
+  # ── Update Scenario (weight 10) ───────────────────────
+  - name: "Update user profile"
+    weight: 10               # 10% of VUs run this scenario
+    flow:
+      - put:
+          url: "/api/users/{{ $randomInt(1, 10000) }}"
+          json:
+            name: "Updated {{ name }}"
+            email: "updated_{{ $randomInt(1, 999999) }}@artillery.com"
+          expect:
+            - statusCode:
+                oneOf: [200, 404, 409]
+
+      - think: 0.5
+
+# ─── WHAT TO WATCH DURING A SOAK TEST ────────────────────
+#
+# While Artillery runs, open another terminal and watch:
+#
+#   # Node.js memory usage (should stay roughly FLAT)
+#   watch -n 5 'curl -s http://localhost:3000/health | python3 -m json.tool'
+#
+#   # Process memory (RSS = Resident Set Size — should be stable)
+#   watch -n 5 'ps aux | grep node | grep -v grep'
+#
+#   # DB connections (should not grow over time)
+#   watch -n 5 'psql -U postgres -c "SELECT count(*) FROM pg_stat_activity WHERE state='"'"'active'"'"'"'
+#
+# RED FLAGS during soak test:
+#   - RSS memory growing: +100MB/hour = likely memory leak
+#   - DB connections growing: connection leak in your pool
+#   - Error rate slowly rising: resource exhaustion creeping in
+#   - p99 latency drifting up: GC pauses or pool saturation
