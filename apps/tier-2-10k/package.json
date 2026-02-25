@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/tier-2-10k/src/server.js",
+    "dev": "tsx watch src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -13,6 +14,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.2",
   "dependencies": {
+    "@scaled-be/types": "workspace:*",
     "compression": "^1.8.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
