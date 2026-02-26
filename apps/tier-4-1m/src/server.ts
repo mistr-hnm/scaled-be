@@ -1,22 +1,25 @@
 /**
  * ─────────────────────────────────────────────────────────
- *  TIER 1 — 1,000 requests/second
- *  Stack: Node.js + TypeScript + Express + PostgreSQL (pg)
- *  Target: Small apps, MVPs, internal tools
- *  Hardware: 1 server, 2 CPU cores, 2GB RAM
+ *  TIER 4 — 1,000,000 requests/second
+ *  Stack: Microservices + Redis Cluster + Message Queue
+ *         + Horizontal Auto-scaling + Partitioned DB
+ *  Target: Large-scale production (think Stripe, Shopify scale)
+ *  Hardware: 10-50 app servers, managed cloud infra
  * ─────────────────────────────────────────────────────────
  *
- *  WHY THIS IS ENOUGH AT 1K:
- *  - Single process handles ~1k req/s easily on modern hardware
- *  - pg.Pool manages DB connections efficiently
- *  - No caching needed — DB can keep up
- *  - Simple, easy to debug and maintain
+ *  NEW vs TIER 3:
+ *  ✅ Write-behind caching (async DB writes via message queue)
+ *  ✅ Redis Cluster (sharded across multiple Redis nodes)
+ *  ✅ Database sharding / partitioning strategy
+ *  ✅ Async job processing with Bull queue
+ *  ✅ Circuit breaker pattern (fail fast, don't cascade)
+ *  ✅ Health checks with graceful degradation
+ *  ✅ Metrics endpoint (Prometheus-compatible)
  */
 
 import express from "express"; 
 import helmet from "helmet";
 import compression from "compression";
-import { dbCircuit, redisCircuit } from "./cb";
 import { metrics } from "./helper";
 import { router } from "./routes";
 
@@ -32,17 +35,6 @@ app.use((_req, _res, next) => {
 });
 
 app.use(router);
-
-// ─── Health + Metrics endpoints ───────────────────────────
-app.get("/health", (_req, res) => {
-  res.json({
-    ok: true,
-    circuits: {
-      redis: redisCircuit.getState(),
-      db:    dbCircuit.getState(),
-    },
-  });
-});
 
 app.get("/metrics", (_req, res) => {
   // Prometheus text format (real prom-client does this properly)

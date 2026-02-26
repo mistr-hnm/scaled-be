@@ -2,13 +2,22 @@ import { Router } from "express";
 import { getReadShard, getWriteShard, redisCluster } from "./db";
 import { User } from "@scaled-be/types";
 import { cacheGetWithCircuit, cacheSetWithCircuit, metrics, userKey } from "./helper";
-import { dbCircuit } from "./cb";
+import { dbCircuit, redisCircuit } from "./cb";
 import { WriteQueue } from "./writequeue";
 
 export const router = Router();
 const writeQueue = new WriteQueue();
- 
-// ─── GET /api/users/:id ───────────────────────────────────
+
+router.get("/health", (_req, res) => {
+  res.json({
+    ok: true,
+    circuits: {
+      redis: redisCircuit.getState(),
+      db:    dbCircuit.getState(),
+    },
+  });
+});
+
 router.get("/api/users/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
@@ -45,7 +54,6 @@ router.get("/api/users/:id", async (req, res, next) => {
   }
 });
 
-// ─── POST /api/users ──────────────────────────────────────
 // Write goes into queue → batched into DB every 50ms
 router.post("/api/users", async (req, res, next) => {
   try {
@@ -65,7 +73,6 @@ router.post("/api/users", async (req, res, next) => {
   }
 });
 
-// ─── PUT /api/users/:id ───────────────────────────────────
 router.put("/api/users/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
@@ -92,7 +99,6 @@ router.put("/api/users/:id", async (req, res, next) => {
   }
 });
 
-// ─── DELETE /api/users/:id ───────────────────────────────
 router.delete("/api/users/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);

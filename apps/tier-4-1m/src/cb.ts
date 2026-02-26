@@ -14,9 +14,9 @@ export class CircuitBreaker extends EventEmitter {
 
   constructor(
     private readonly name: string,
-    private readonly threshold = 5,        // failures before OPEN
-    private readonly timeout = 30_000,     // ms before trying HALF_OPEN
-    private readonly successThreshold = 3  // successes in HALF_OPEN to CLOSE
+    private readonly threshold = 5,        // failures before OPEN (5 row failure)
+    private readonly timeout = 30_000,     // ms before trying HALF_OPEN (30s time takes to retry)
+    private readonly successThreshold = 3  // successes in HALF_OPEN to CLOSE (3 request will try after 30s)
   ) {
     super();
   }
