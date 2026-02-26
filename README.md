@@ -1,4 +1,4 @@
-
+```
 Tier 1 :
 
 [ Client ] 
@@ -69,3 +69,4 @@ Tier 4 :
 [Shard 0]        [Shard 1]       [Shard 2] ◀── Database Sharding
  (P + R)          (P + R)          (P + R)      (Independent Clusters)
 ------------------------------------------------------
+```
