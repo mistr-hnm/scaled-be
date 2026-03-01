@@ -73,7 +73,7 @@ router.get("/api/users", async (req, res, next) => {
   }
 });
 
-// ─── GET ONE — cache-aside pattern ────────────────────────
+
 router.get("/api/users/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -102,7 +102,7 @@ router.get("/api/users/:id", async (req, res, next) => {
   }
 });
 
-// ─── CREATE — write to primary, invalidate cache ──────────
+
 router.post("/api/users", async (req, res, next) => {
   try {
     const { name, email } = req.body as { name: string; email: string };
@@ -125,7 +125,7 @@ router.post("/api/users", async (req, res, next) => {
   }
 });
 
-// ─── UPDATE — write primary, invalidate specific user cache
+
 router.put("/api/users/:id", async (req, res, next) => {
   try {
     const { name, email } = req.body as { name: string; email: string };
@@ -148,7 +148,7 @@ router.put("/api/users/:id", async (req, res, next) => {
   }
 });
 
-// ─── DELETE ───────────────────────────────────────────────
+
 router.delete("/api/users/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
