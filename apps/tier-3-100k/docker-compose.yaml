@@ -1,0 +1,68 @@
+services:
+  # LAYER 1: The Gatekeeper (Public facing)
+  nginx:
+    image: nginx:alpine
+    ports: 
+      - "8080:80"
+    volumes: 
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on: 
+      - tier3-app1
+      - tier3-app2
+      - tier3-app3
+
+  tier3-app1:
+    build: 
+      context: ../../
+      dockerfile: apps/tier-3-100k/Dockerfile
+    environment:
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379
+    depends_on: 
+      - redis
+      - pgbouncer
+  tier3-app2: 
+    build: 
+      context: ../../
+      dockerfile: apps/tier-3-100k/Dockerfile
+    environment:
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+      - pgbouncer
+  tier3-app3:
+    build: 
+      context: ../../
+      dockerfile: apps/tier-3-100k/Dockerfile
+    environment:
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+      - pgbouncer
+
+  redis:
+     image: redis:7
+
+  postgres-primary:
+     image: postgres:15
+     environment:
+       POSTGRES_PASSWORD: postgres
+     ports:
+       - "5433:5432"
+  postgres-replica:
+      image: postgres:15
+      environment:
+         POSTGRES_PASSWORD: postgres
+
+  pgbouncer: 
+      image: edoburu/pgbouncer
+      environment:
+        - DATABASE_URL=postgres://postgres:postgres@postgres-primary:5432/postgres
+      volumes:
+        - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      ports:
+        - 6432:6432
+      depends_on:
+        - postgres-primary

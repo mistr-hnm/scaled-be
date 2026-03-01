@@ -7,9 +7,9 @@ import { Pool } from "pg";
 
 // PRIMARY — writes only (INSERT, UPDATE, DELETE)
 export const primaryPool = new Pool({
-  host:     process.env.DB_PRIMARY_HOST || "postgres-primary",
-  port:     Number(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME        || "postgres",
+  host:     process.env.DB_PRIMARY_HOST || "pgbouncer",
+  port:     Number(process.env.DB_PORT) || 6432,
+  database: process.env.DB_NAME        || "myapp_primary",
   user:     process.env.DB_USER        || "postgres",
   password: process.env.DB_PASSWORD    || "postgres",
   max: 10, // PgBouncer handles the heavy pooling — keep this low
@@ -19,9 +19,9 @@ export const primaryPool = new Pool({
 
 // REPLICA — reads only (SELECT). You can add more replicas and round-robin.
 export const replicaPool = new Pool({
-  host:     process.env.DB_REPLICA_HOST || "postgres-replica",
-  port:     Number(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME        || "postgres",
+  host:     process.env.DB_REPLICA_HOST || "pgbouncer",
+  port:     Number(process.env.DB_PORT) || 6432,
+  database: process.env.DB_NAME        || "myapp_replica",
   user:     process.env.DB_USER        || "postgres",
   password: process.env.DB_PASSWORD    || "postgres",
   max: 20, // replicas can handle more reads

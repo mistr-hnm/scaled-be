@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/tier-3-100k/src/server.js",
+    "start:t3": "node dist/src/server.js",
     "dev": "tsx watch src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
