@@ -24,6 +24,7 @@ services:
       - DB_REPLICA_HOST=pgbouncer
       - DB_NAME_PRIMARY=myapp_primary
       - DB_NAME_REPLICA=myapp_replica
+      - DB_PORT=6432
     networks:
       - app-network
     depends_on: 
@@ -40,6 +41,7 @@ services:
       - DB_REPLICA_HOST=pgbouncer
       - DB_NAME_PRIMARY=myapp_primary
       - DB_NAME_REPLICA=myapp_replica
+      - DB_PORT=6432
     networks:
       - app-network
     depends_on:
@@ -56,6 +58,7 @@ services:
       - DB_REPLICA_HOST=pgbouncer
       - DB_NAME_PRIMARY=myapp_primary
       - DB_NAME_REPLICA=myapp_replica
+      - DB_PORT=6432
     networks:
       - app-network
     depends_on:
@@ -73,6 +76,7 @@ services:
     networks:
       - app-network
     volumes:
+      - pg_primary_data:/var/lib/postgresql/data
       - ./apps/tier-3-100k/init-db:/docker-entrypoint-initdb.d
     environment:
       - POSTGRES_USER=postgres
@@ -97,6 +101,8 @@ services:
       - app-network
     depends_on:
       - postgres-primary
+    volumes:
+      - pg_replica_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=postgres
       - PGPASSWORD=postgres
@@ -105,14 +111,18 @@ services:
     # We use the service name 'postgres-primary' which Docker DNS should resolve
     command: >
       bash -c "
-      echo 'Waiting for Primary DNS...';
-      sleep 5;
+      echo 'Waiting for Primary...';
       until pg_isready -h postgres-primary -p 5432; do
-        echo 'Waiting for Primary database...';
         sleep 2;
       done;
-      rm -rf /var/lib/postgresql/data/*;
-      pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U postgres -vP -R;
+      if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
+        echo 'Initializing replica...';
+        pg_basebackup -h postgres-primary \
+                      -D /var/lib/postgresql/data \
+                      -U postgres -vP -R;
+      else
+        echo 'Replica already initialized';
+      fi;
       exec docker-entrypoint.sh postgres
       "
   pgbouncer: 
@@ -132,3 +142,7 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  pg_primary_data:
+  pg_replica_data:
