@@ -1,0 +1,32 @@
+services:
+  postgres-t2:
+    image: postgres:15
+    container_name: postgres-t2
+    volumes:
+      - ./apps/tier-2-10k/init-db:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    networks:
+      - app-network
+    ports:
+      - "5433:5432"
+  
+  tier-1-1k:
+    build:
+      context: ../../
+      dockerfile: apps/tier-2-10k/Dockerfile
+    environment:
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379
+      - DB_NAME=postgres
+      - DB_PORT=5432
+    networks:
+      - app-network
+    depends_on:
+      - postgres-t2
+
+networks:
+  app-network:
+    driver: bridge
